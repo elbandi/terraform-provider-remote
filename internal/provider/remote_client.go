@@ -362,19 +362,27 @@ func (c *RemoteClient) StatFileSFTP(path string, char string) (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	fiExt, ok := stat.(sftp.FileInfoUidGid)
+	fiExt, ok := stat.Sys().(*sftp.FileStat)
 	if !ok {
-		return "", errors.New("cannot convert FileInfo")
+		return "", errors.New("cannot convert FileStat")
 	}
 	switch char {
 	case "a":
 		return fmt.Sprintf("%04o", stat.Mode()), nil
+	case "A":
+		return stat.Mode().String(), nil
 	case "u":
-		return strconv.FormatUint(uint64(fiExt.Uid()), 10), nil
+		return strconv.FormatUint(uint64(fiExt.UID), 10), nil
 	case "g":
-		return strconv.FormatUint(uint64(fiExt.Uid()), 10), nil
+		return strconv.FormatUint(uint64(fiExt.GID), 10), nil
 	case "s":
-		return strconv.FormatInt(fiExt.Size(), 10), nil
+		return strconv.FormatInt(stat.Size(), 10), nil
+	case "x":
+		return fiExt.AccessTime().String(), nil
+	case "X":
+		return strconv.FormatInt(fiExt.ModTime().Unix(), 10), nil
+	case "z":
+		return fiExt.ModTime().String(), nil
 	case "Z":
 		return strconv.FormatInt(fiExt.ModTime().Unix(), 10), nil
 	default:
