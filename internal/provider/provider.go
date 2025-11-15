@@ -212,6 +212,11 @@ func resourceConnectionHash(d *schema.ResourceData) (string, error) {
 		return "", err
 	}
 
+	privateKeyPass, _, err := GetOk[string](d, "conn.0.private_pass")
+	if err != nil {
+		return "", err
+	}
+
 	// Should ideally use Get as it has a default and should always exist.
 	// However GetOk as Terraform returns false for exists when value equals
 	// zero value (which the default for agent does). Could maybe use
@@ -228,6 +233,7 @@ func resourceConnectionHash(d *schema.ResourceData) (string, error) {
 		password,
 		privateKey,
 		privateKeyPath,
+		privateKeyPass,
 		strconv.FormatBool(agent),
 	}
 	return strings.Join(elements, "::"), nil
