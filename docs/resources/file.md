@@ -52,14 +52,16 @@ resource "remote_file" "server2_bashrc" {
 
 ### Required
 
-- `content` (String) Content of file.
 - `path` (String) Path to file on remote host.
 
 ### Optional
 
 - `conn` (Block List, Max: 1) Connection to host where files are located. (see [below for nested schema](#nestedblock--conn))
+- `content` (String) Content of file. This conflicts with [content_file]
+- `content_file` (String) Content of file read from. This conflicts with [content]
 - `group` (String) Group ID (GID) of file owner. Mutually exclusive with `group_name`.
 - `group_name` (String) Group name of file owner. Mutually exclusive with `group`.
+- `hash` (String) The sha256 checksum calculated from the file
 - `owner` (String) User ID (UID) of file owner. Mutually exclusive with `owner_name`.
 - `owner_name` (String) User name of file owner. Mutually exclusive with `owner`.
 - `permissions` (String) Permissions of file (in octal form). Defaults to `0644`.
