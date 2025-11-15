@@ -2,8 +2,11 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -18,6 +21,9 @@ func resourceRemoteFile() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
+		CustomizeDiff: customdiff.ComputedIf("hash", func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+			return d.HasChange("content_file") || d.HasChange("content")
+		}),
 
 		Schema: map[string]*schema.Schema{
 			"conn": {
@@ -35,15 +41,28 @@ func resourceRemoteFile() *schema.Resource {
 				Required:    true,
 			},
 			"content": {
-				Description: "Content of file.",
-				Type:        schema.TypeString,
-				Required:    true,
+				Description:   fmt.Sprintf("Content of file. This conflicts with [%s]", "content_file"),
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"content_file"},
+			},
+			"content_file": {
+				Description:   fmt.Sprintf("Content of file read from. This conflicts with [%s]", "content"),
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"content"},
 			},
 			"permissions": {
 				Description: "Permissions of file (in octal form).",
 				Type:        schema.TypeString,
 				Default:     "0644",
 				Optional:    true,
+			},
+			"hash": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "The sha256 checksum calculated from the file",
 			},
 			"group": {
 				Description: "Group ID (GID) of file owner. Mutually exclusive with `group_name`.",
@@ -96,11 +115,6 @@ func resourceRemoteFileCreate(ctx context.Context, d *schema.ResourceData, meta 
 		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
 	}
 
-	content, err := Get[string](d, "content")
-	if err != nil {
-		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
-	}
-
 	path, err := Get[string](d, "path")
 	if err != nil {
 		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
@@ -138,8 +152,32 @@ func resourceRemoteFileCreate(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if d.HasChange("content") {
-		if err := client.WriteFile(ctx, content, path, permissions, sudo); err != nil {
-			return diag.Errorf("unable to create remote file: %s", err.Error())
+		content, ok, err := GetOk[string](d, "content")
+		if err != nil {
+			return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+		}
+
+		if ok {
+			if err := client.WriteFile(ctx, content, path, permissions, sudo); err != nil {
+				return diag.Errorf("unable to create remote file: %s", err.Error())
+			}
+			d.Set("hash", getHash(content))
+		}
+	}
+	if d.HasChange("content_file") {
+		contentFile, ok, err := GetOk[string](d, "content_file")
+		if err != nil {
+			return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+		}
+		if ok {
+			content, err := os.ReadFile(contentFile)
+			if err != nil {
+				return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+			}
+			if err := client.WriteFile(ctx, string(content), path, permissions, sudo); err != nil {
+				return diag.Errorf("unable to create remote file: %s", err.Error())
+			}
+			d.Set("hash", getHash(string(content)))
 		}
 	}
 
@@ -221,9 +259,7 @@ func resourceRemoteFileRead(ctx context.Context, d *schema.ResourceData, meta in
 		if err != nil {
 			return diag.Errorf("unable to read remote file: %s", err.Error())
 		}
-		if err := d.Set("content", content); err != nil {
-			return diag.FromErr(err)
-		}
+		d.Set("hash", getHash(content))
 
 		permissions, err := client.ReadFilePermissions(path, sudo)
 		if err != nil {

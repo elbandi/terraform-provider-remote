@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 
@@ -78,4 +79,11 @@ func writeFileToHost(host string, filename string, content string, group string,
 		stdin.Close()
 	}()
 	session.Run(fmt.Sprintf("cat /dev/stdin | tee %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+}
+
+func getHash(data string) string {
+	sha := sha256.New()
+	sha.Write([]byte(data))
+	shaSum := sha.Sum(nil)
+	return fmt.Sprintf("%x", shaSum)
 }
