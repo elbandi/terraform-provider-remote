@@ -338,11 +338,17 @@ func (c *RemoteClient) ReadFileGroup(path string, sudo bool) (string, error) {
 }
 
 func (c *RemoteClient) ReadFileOwnerName(path string, sudo bool) (string, error) {
-	return c.StatFileShell(path, "U", sudo)
+	if sudo {
+		return c.StatFileShell(path, "U", sudo)
+	}
+	return c.StatFileSFTP(path, "U")
 }
 
 func (c *RemoteClient) ReadFileGroupName(path string, sudo bool) (string, error) {
-	return c.StatFileShell(path, "G", sudo)
+	if sudo {
+		return c.StatFileShell(path, "G", sudo)
+	}
+	return c.StatFileSFTP(path, "G")
 }
 
 func (c *RemoteClient) ReadFileModTime(path string, sudo bool) (string, error) {
@@ -381,8 +387,12 @@ func (c *RemoteClient) StatFileSFTP(path string, char string) (string, error) {
 		return stat.Mode().String(), nil
 	case "u":
 		return strconv.FormatUint(uint64(fiExt.UID), 10), nil
+	case "U":
+		return fmt.Sprintf("UID:%d", fiExt.UID), nil
 	case "g":
 		return strconv.FormatUint(uint64(fiExt.GID), 10), nil
+	case "G":
+		return fmt.Sprintf("GID:%d", fiExt.GID), nil
 	case "s":
 		return strconv.FormatInt(stat.Size(), 10), nil
 	case "x":
