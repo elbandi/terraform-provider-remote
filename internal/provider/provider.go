@@ -32,6 +32,7 @@ func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
 			DataSourcesMap: map[string]*schema.Resource{
+				"remote_dir":  dataSourceRemoteDir(),
 				"remote_file": dataSourceRemoteFile(),
 			},
 			ResourcesMap: map[string]*schema.Resource{

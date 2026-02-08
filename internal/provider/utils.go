@@ -81,6 +81,25 @@ func writeFileToHost(host string, filename string, content string, group string,
 	session.Run(fmt.Sprintf("cat /dev/stdin | tee %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
 }
 
+func makeDirToHost(host string, filename string, group string, user string) {
+	sshClient, err := ssh.Dial("tcp", host, &ssh.ClientConfig{
+		User:            "root",
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth:            []ssh.AuthMethod{ssh.Password("password")},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	session, err := sshClient.NewSession()
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	session.Run(fmt.Sprintf("mkdir %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+}
+
 func getHash(data string) string {
 	sha := sha256.New()
 	sha.Write([]byte(data))
