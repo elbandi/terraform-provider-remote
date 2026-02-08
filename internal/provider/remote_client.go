@@ -190,45 +190,100 @@ func (c *RemoteClient) FileExists(path string, sudo bool) (bool, error) {
 }
 
 func (c *RemoteClient) FileExistsSFTP(path string) (bool, error) {
-	sftpClient, err := c.GetSFTPClient()
+	exists, isDir, err := c.statSFTP(path)
 	if err != nil {
 		return false, err
+	}
+	return exists && !isDir, nil
+}
+
+func (c *RemoteClient) FileExistsShell(path string, sudo bool) (bool, error) {
+	exists, isDir, err := c.statShell(path, sudo)
+	if err != nil {
+		return false, err
+	}
+	return exists && !isDir, nil
+}
+
+func (c *RemoteClient) DirExists(path string, sudo bool) (bool, error) {
+	if sudo {
+		return c.DirExistsShell(path, sudo)
+	}
+	return c.DirExistsSFTP(path)
+}
+
+func (c *RemoteClient) DirExistsSFTP(path string) (bool, error) {
+	exists, isDir, err := c.statSFTP(path)
+	if err != nil {
+		return false, err
+	}
+	return exists && isDir, nil
+}
+
+func (c *RemoteClient) DirExistsShell(path string, sudo bool) (bool, error) {
+	exists, isDir, err := c.statShell(path, sudo)
+	if err != nil {
+		return false, err
+	}
+	return exists && isDir, nil
+}
+
+func (c *RemoteClient) statSFTP(path string) (bool, bool, error) {
+	sftpClient, err := c.GetSFTPClient()
+	if err != nil {
+		return false, false, err
 	}
 	defer sftpClient.Close()
 
 	stat, err := sftpClient.Stat(path)
 	if err == nil {
-		return !stat.IsDir(), nil
+		return true, stat.IsDir(), nil
 	}
 	if os.IsNotExist(err) {
-		return false, nil
+		return false, false, nil
 	}
 	// If the error is an SFTP status error and its Code is 10, treat as "not exists"
 	var se *sftp.StatusError
 	if errors.As(err, &se) {
 		if se.Code == 10 /* sftp.sshFxNoSuchPath */ {
-			return false, nil
+			return false, false, nil
 		}
 	}
-
-	return false, err
+	return false, false, err
 }
 
-func (c *RemoteClient) FileExistsShell(path string, sudo bool) (bool, error) {
-	cmd := fmt.Sprintf("test -f %s", path)
+func (c *RemoteClient) statShell(path string, sudo bool) (bool, bool, error) {
+	sshClient := c.GetSSHClient()
+
+	session, err := sshClient.NewSession()
+	if err != nil {
+		return false, false, err
+	}
+	defer session.Close()
+
+	// Use a single stat invocation that prints the file type; if stat fails (missing path)
+	// fall back to printing "n". stderr is suppressed so session.Output won't error.
+	cmd := fmt.Sprintf("stat -L -c %%F %s 2>/dev/null || printf n", path)
 	if sudo {
 		cmd = fmt.Sprintf("sudo %s", cmd)
 	}
 
-	if err := c.run(cmd); err != nil {
-		cmd := fmt.Sprintf("test ! -f %s", path)
-		if sudo {
-			cmd = fmt.Sprintf("sudo %s", cmd)
-		}
-		return false, c.run(cmd)
+	output, err := session.Output(cmd)
+	if err != nil {
+		return false, false, err
 	}
 
-	return true, nil
+	out := strings.TrimSpace(string(output))
+	switch out {
+	case "regular file":
+		return true, false, nil
+	case "directory":
+		return true, true, nil
+	default:
+		// treat other file types (socket, fifo, block, char, symlink-resolved, etc)
+		// as existing entries
+		return false, false, nil
+	}
 }
 
 func (c *RemoteClient) ReadFile(path string, sudo bool) (string, error) {
