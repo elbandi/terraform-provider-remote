@@ -196,9 +196,9 @@ func (c *RemoteClient) FileExistsSFTP(path string) (bool, error) {
 	}
 	defer sftpClient.Close()
 
-	_, err = sftpClient.Stat(path)
+	stat, err := sftpClient.Stat(path)
 	if err == nil {
-		return true, nil
+		return !stat.IsDir(), nil
 	}
 	if os.IsNotExist(err) {
 		return false, nil
