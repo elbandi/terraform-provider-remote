@@ -27,6 +27,12 @@ func dataSourceRemoteFile() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 			},
+			"check_only": {
+				Description: "Only check if file exists, do not read content or metadata.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
 			"content": {
 				Description: "Content of file.",
 				Type:        schema.TypeString,
@@ -85,13 +91,23 @@ func dataSourceRemoteFileRead(ctx context.Context, d *schema.ResourceData, meta 
 	if err != nil {
 		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
 	}
+	var checkOnly bool
+	if c, ok, err := GetOk[bool](d, "check_only"); ok {
+		if err != nil {
+			return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+		}
+		checkOnly = c
+	}
 
 	exists, err := client.FileExists(path, sudo)
 	if err != nil {
 		return diag.Errorf("unable to check if remote file exists: %s", err.Error())
 	}
 	if !exists {
-		return diag.Errorf("cannot read file, it does not exist")
+		if !checkOnly {
+			return diag.Errorf("remote file does not exist")
+		}
+		return diag.Diagnostics{}
 	}
 
 	content, err := client.ReadFile(path, sudo)
