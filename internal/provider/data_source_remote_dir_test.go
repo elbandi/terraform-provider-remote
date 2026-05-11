@@ -30,17 +30,17 @@ func TestAccDataSourceRemoteDir(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "id", regexp.MustCompile("remotehost:22:/tmp/data_1")),
+						"data.remote_dir.data_1", "id", regexp.MustCompile("remotehost:22:/tmp/data_1")),
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "permissions", regexp.MustCompile("0755")),
+						"data.remote_dir.data_1", "permissions", regexp.MustCompile("0755")),
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "owner", regexp.MustCompile("1000")),
+						"data.remote_dir.data_1", "owner", regexp.MustCompile("1000")),
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "group", regexp.MustCompile("0")),
+						"data.remote_dir.data_1", "group", regexp.MustCompile("0")),
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "owner_name", regexp.MustCompile("bob")),
+						"data.remote_dir.data_1", "owner_name", regexp.MustCompile("bob")),
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_1", "group_name", regexp.MustCompile("root")),
+						"data.remote_dir.data_1", "group_name", regexp.MustCompile("root")),
 				),
 			},
 		},
@@ -57,7 +57,7 @@ func TestAccDataSourceRemoteDirOverridingDefaultConnection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: `
-				data "remote_file" "data_2" {
+				data "remote_dir" "data_2" {
 					provider = remotehost
 					conn {
 						host = "remotehost2"
@@ -69,7 +69,7 @@ func TestAccDataSourceRemoteDirOverridingDefaultConnection(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_2", "permissions", regexp.MustCompile("0755")),
+						"data.remote_dir.data_2", "permissions", regexp.MustCompile("0755")),
 				),
 			},
 		},
@@ -90,7 +90,7 @@ func TestAccDataSourceRemoteDirPrivateKey(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: `
-				data "remote_file" "data_3" {
+				data "remote_dir" "data_3" {
 					conn {
 						host = "remotehost"
 						user = "root"
@@ -140,7 +140,7 @@ func TestAccDataSourceRemoteDirPrivateKey(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_3", "permissions", regexp.MustCompile("0755")),
+						"data.remote_dir.data_3", "permissions", regexp.MustCompile("0755")),
 				),
 			},
 		},
@@ -161,7 +161,7 @@ func TestAccDataSourceRemoteDirPrivateKeyPath(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: `
-				data "remote_file" "data_4" {
+				data "remote_dir" "data_4" {
 					conn {
 						host = "remotehost"
 						user = "root"
@@ -172,7 +172,7 @@ func TestAccDataSourceRemoteDirPrivateKeyPath(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.remote_file.data_4", "permissions", regexp.MustCompile("0755")),
+						"data.remote_dir.data_4", "permissions", regexp.MustCompile("0755")),
 				),
 			},
 		},
