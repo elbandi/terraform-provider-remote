@@ -46,6 +46,7 @@ data "remote_file" "server2_hosts" {
 
 ### Optional
 
+- `check_only` (Boolean) Only check if file exists, do not read content or metadata. Defaults to `false`.
 - `conn` (Block List, Max: 1) Connection to host where files are located. (see [below for nested schema](#nestedblock--conn))
 
 ### Read-Only
