@@ -350,7 +350,7 @@ func (c *RemoteClient) ReadFilePermissionsSFTP(path string) (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	return fmt.Sprintf("%04o", stat.Mode()), err
+	return fmt.Sprintf("%04o", stat.Mode().Perm()), err
 }
 
 func (c *RemoteClient) ReadFilePermissionsShell(path string, sudo bool) (string, error) {
@@ -437,7 +437,7 @@ func (c *RemoteClient) StatFileSFTP(path string, char string) (string, error) {
 	}
 	switch char {
 	case "a":
-		return fmt.Sprintf("%04o", stat.Mode()), nil
+		return fmt.Sprintf("%04o", stat.Mode().Perm()), nil
 	case "A":
 		return stat.Mode().String(), nil
 	case "u":
