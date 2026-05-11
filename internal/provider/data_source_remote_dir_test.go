@@ -22,6 +22,7 @@ func TestAccDataSourceRemoteDir(t *testing.T) {
 					conn {
 						host = "remotehost"
 						user = "root"
+						sudo = true
 						password = "password"
 					}
 					path = "/tmp/data_1"
