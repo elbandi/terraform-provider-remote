@@ -91,9 +91,12 @@ func dataSourceRemoteDirRead(ctx context.Context, d *schema.ResourceData, meta i
 	if err != nil {
 		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
 	}
-	checkOnly, err := Get[bool](d, "check_only")
-	if err != nil {
-		return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+	var checkOnly bool
+	if c, ok, err := GetOk[bool](d, "check_only"); ok {
+		if err != nil {
+			return diag.Diagnostics{{Severity: diag.Error, Summary: err.Error()}}
+		}
+		checkOnly = c
 	}
 
 	exists, err := client.DirExists(path, sudo)
