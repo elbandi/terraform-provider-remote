@@ -101,6 +101,46 @@ func (c *RemoteClient) WriteFileSFTP(_ context.Context, content string, path str
 	return nil
 }
 
+func (c *RemoteClient) MakeDir(path string, sudo bool) error {
+	if sudo {
+		return c.MakeDirShell(path)
+	}
+	return c.MakeDirSFTP(path)
+}
+
+func (c *RemoteClient) MakeDirSFTP(path string) error {
+	sftpClient, err := c.GetSFTPClient()
+	if err != nil {
+		return err
+	}
+	defer sftpClient.Close()
+
+	err = sftpClient.Mkdir(path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *RemoteClient) MakeDirShell(path string) error {
+	sshClient := c.GetSSHClient()
+
+	session, err := sshClient.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	cmd := fmt.Sprintf("sudo mkdir %s", path)
+	err = c.run(cmd)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *RemoteClient) WriteFileShell(content string, path string, permissions string) error {
 	sshClient := c.GetSSHClient()
 
@@ -519,6 +559,28 @@ func (c *RemoteClient) DeleteFileSFTP(path string) error {
 
 func (c *RemoteClient) DeleteFileShell(path string) error {
 	cmd := fmt.Sprintf("sudo rm %s", path)
+	return c.run(cmd)
+}
+
+func (c *RemoteClient) DeleteDir(path string, sudo bool) error {
+	if sudo {
+		return c.DeleteDirShell(path)
+	}
+	return c.DeleteDirSFTP(path)
+}
+
+func (c *RemoteClient) DeleteDirSFTP(path string) error {
+	sftpClient, err := c.GetSFTPClient()
+	if err != nil {
+		return err
+	}
+	defer sftpClient.Close()
+
+	return sftpClient.Remove(path)
+}
+
+func (c *RemoteClient) DeleteDirShell(path string) error {
+	cmd := fmt.Sprintf("sudo rmdir %s", path)
 	return c.run(cmd)
 }
 
