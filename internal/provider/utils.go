@@ -78,7 +78,10 @@ func writeFileToHost(host string, filename string, content string, group string,
 		stdin.Write([]byte(content))
 		stdin.Close()
 	}()
-	session.Run(fmt.Sprintf("cat /dev/stdin | tee %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+	err = session.Run(fmt.Sprintf("cat /dev/stdin | tee %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func makeDirToHost(host string, filename string, group string, user string) {
@@ -97,7 +100,10 @@ func makeDirToHost(host string, filename string, group string, user string) {
 	}
 	defer session.Close()
 
-	session.Run(fmt.Sprintf("mkdir %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+	err = session.Run(fmt.Sprintf("mkdir %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func getHash(data string) string {
