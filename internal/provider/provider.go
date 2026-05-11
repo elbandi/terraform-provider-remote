@@ -37,6 +37,7 @@ func New(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"remote_file": resourceRemoteFile(),
+				"remote_dir":  resourceRemoteDir(),
 			},
 			Schema: map[string]*schema.Schema{
 				"conn": {
