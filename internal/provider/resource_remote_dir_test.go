@@ -30,6 +30,7 @@ func TestAccResourceRemoteDir(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"remote_dir.resource_1", "id", regexp.MustCompile("remotehost:22:/tmp/resource_1")),
+					checkDirExists("remotehost:22", "/tmp/resource_1", true),
 				),
 			},
 		},
@@ -52,6 +53,7 @@ func TestAccResourceRemoteDirWithDefaultConnection(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"remote_dir.resource_2", "id", regexp.MustCompile("remotehost:22:/tmp/resource_2")),
+					checkDirExists("remotehost:22", "/tmp/resource_2", true),
 				),
 			},
 		},
@@ -81,6 +83,7 @@ func TestAccResourceRemoteDirWithAgent(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"remote_dir.resource_3", "id", regexp.MustCompile("remotehost:22:/tmp/resource_3")),
+					checkDirExists("remotehost:22", "/tmp/resource_3", true),
 				),
 			},
 		},

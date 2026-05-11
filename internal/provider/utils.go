@@ -100,6 +100,32 @@ func makeDirToHost(host string, filename string, group string, user string) {
 	session.Run(fmt.Sprintf("mkdir %s && chgrp %s %s && chown %s %s", filename, group, filename, user, filename))
 }
 
+func checkExist(host string, filename string, filetype string) (bool, error) {
+	sshClient, err := ssh.Dial("tcp", host, &ssh.ClientConfig{
+		User:            "root",
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth:            []ssh.AuthMethod{ssh.Password("password")},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	session, err := sshClient.NewSession()
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	cmd := fmt.Sprintf("test -%s %s", filetype, filename)
+
+	if err := session.Run(cmd); err != nil {
+		cmd := fmt.Sprintf("test ! -%s %s", filetype, filename)
+		return false, session.Run(cmd)
+	}
+
+	return true, nil
+}
+
 func getHash(data string) string {
 	sha := sha256.New()
 	sha.Write([]byte(data))
